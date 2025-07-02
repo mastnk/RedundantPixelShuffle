@@ -27,7 +27,7 @@ No extra dependencies other than `PyTorch`.
 
 ```python
 import torch
-from pixel_shuffle import InverseRedundantPixelShuffle, RedundantPixelShuffle
+from redundant_pixel_shuffle import InverseRedundantPixelShuffle, RedundantPixelShuffle
 
 # Example input
 b, c, h, w = 2, 3, 3, 4
