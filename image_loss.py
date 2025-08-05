@@ -45,7 +45,7 @@ class ImageLoss(nn.Module):
         if( self.alpha > 0 ):
             xh, xv = spatial_diff( x )
             yh, yv = spatial_diff( y )
-            loss = loss + self.alpha * ( huber(xh-yh, self.delta).mean( dim=(1,2,3) ) + huber(xh-yh, self.delta).mean( dim=(1,2,3) ) )
+            loss = loss + self.alpha * ( huber(xh-yh, self.delta).mean( dim=(1,2,3) ) + huber(xv-yv, self.delta).mean( dim=(1,2,3) ) )
 
         if( self.beta > 0 ):
             xc = channel_diff( x, self.nChannels )
