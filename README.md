@@ -1,27 +1,21 @@
-# Redundant Pixel Shuffle (Inverse and Restore)
+# RedundantPixelShuffle (Inverse & Restore)
 
-This repository contains a pair of utility classes for spatial-to-channel and channel-to-spatial tensor transformations using overlapping patches. This technique can be used for data augmentation, local context encoding, or designing custom neural network layers inspired by inverse pixel shuffling.
-
----
+This repository provides two utility classes that convert between spatial and channel representations using *overlapping patches*. You can use this for data augmentation, local context encoding, or as building blocks for custom neural network layers inspired by inverse pixel shuffle techniques.
 
 ## Overview
 
-This module implements:
+- **InverseRedundantPixelShuffle**  
+  Extracts overlapping local patches from an image (via sliding windows) and flattens each patch into the channel dimension.
 
-- **`InverseRedundantPixelShuffle`**  
-  Extracts overlapping local patches (via sliding windows) from an image tensor and flattens them into the channel dimension.
+- **RedundantPixelShuffle**  
+  Restores the original image from the expanded patch-channel representation. Overlapping regions are averaged to reconstruct the final image.
 
-- **`RedundantPixelShuffle`**  
-  Restores the original image size from the expanded tensor, averaging overlapping regions to reconstruct the original values.
-
----
+These transforms are complementary: one expands spatial information into channels, the other restores it.
 
 ## Installation
 
-Just copy the `*.py` file into your project.  
-No extra dependencies other than `PyTorch`.
-
----
+Just copy the `.py` files into your project.  
+Requires only **PyTorch** (no additional dependencies).
 
 ## Usage Example
 
@@ -33,16 +27,38 @@ from redundant_pixel_shuffle import InverseRedundantPixelShuffle, RedundantPixel
 b, c, h, w = 2, 3, 3, 4
 x = torch.arange(b * c * h * w, dtype=torch.float).view(b, c, h, w)
 
-k = 3  # kernel size
+k = 3  # kernel / patch size
 
-# Transform
-IRPS = InverseRedundantPixelShuffle(kernel_size=k)
-RPS = RedundantPixelShuffle(kernel_size=k)
+irps = InverseRedundantPixelShuffle(kernel_size=k)
+rps = RedundantPixelShuffle(kernel_size=k)
 
-y = IRPS(x)
-z = RPS(y)
+y = irps(x)
+z = rps(y)
 
 print("Original x shape:", x.shape)
 print("Transformed y shape:", y.shape)
 print("Restored z shape:", z.shape)
+```
 
+You should see that `z` approximates (or equals, depending on data) the original `x` in shape and content.
+
+## Notes & Details
+
+- **Overlap Averaging**  
+  When reconstructing with `RedundantPixelShuffle`, overlapping pixels are averaged (or summed, depending on the implementation) to produce the final output.
+
+- **Channel Ordering**  
+  For `InverseRedundantPixelShuffle`, patches are flattened such that for each original channel (e.g. R, G, B), all positions in the kernel window are grouped together.
+
+- **Edge Handling / Padding**  
+  Care must be taken with boundaries; you may need to pad before applying inverse transform so that the reconstruction is consistent.
+
+## Potential Use Cases
+
+- Data augmentation by mixing spatial neighbors  
+- Feature encoding that retains spatial locality  
+- Custom layers for super-resolution, context modeling, or other vision tasks
+
+## License & Contribution
+
+Feel free to fork, modify, and use as you see fit. Contributions, bug reports, and pull requests are welcome!
