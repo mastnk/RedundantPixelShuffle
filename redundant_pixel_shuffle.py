@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 class InverseRedundantPixelShuffle():
     def __init__( self, kernel_size ):
+        assert kernel_size % 2 == 1
         self.kernel_size = kernel_size
         self.unfold = nn.Unfold( kernel_size )
 
@@ -13,8 +14,21 @@ class InverseRedundantPixelShuffle():
         x = self.unfold( x ).view( b, c * self.kernel_size*self.kernel_size, h-(self.kernel_size-1), w-(self.kernel_size-1) )
         return x
 
+class InverseRedundantPixelShuffle_AC_DC():
+    def __init__( self, kernel_size ):
+        assert kernel_size % 2 == 1
+        self.kernel_size = kernel_size
+        self.irps = InverseRedundantPixelShuffle( kernel_size )
+        self.box = nn.AvgPool2d(kernel_size=kernel_size, stride=1, padding=0)
+
+    def __call__( self, x ):
+        dc = self.box( x ).repeat_interleave( self.kernel_size*self.kernel_size, dim=1 )
+        ac = self.irps( x ) - dc
+        return ac, dc
+
 class RedundantPixelShuffle():
     def __init__(self, kernel_size):
+        assert kernel_size % 2 == 1
         self.kernel_size = kernel_size
         self.fold = nn.Fold(
             output_size=None,  # Placeholder (set later explicitly)
@@ -44,6 +58,7 @@ class RedundantPixelShuffle():
 
 
 if( __name__ == "__main__" ):
+    print( "InverseRedundantPixelShuffle()" )
     b, c, h, w = 2, 3, 3, 4
     x = torch.tensor( list(range( b * c * h * w )), dtype=torch.float )
     x = x.view( b, c, h, w )
@@ -68,6 +83,43 @@ if( __name__ == "__main__" ):
         for ww in range(y.shape[3]):
             print( f"y: {hh}, {ww}" )
             print( y[0,:,hh,ww] )
+    print()
+
+    print( "z ch0" )
+    print( z[0,0,:,:] )
+    print( "z ch1" )
+    print( z[0,1,:,:] )
+    print( "z ch2" )
+    print( z[0,2,:,:] )
+    print()
+
+
+    print( "InverseRedundantPixelShuffle_AC_DC" )
+    b, c, h, w = 2, 3, 3, 4
+    x = torch.tensor( list(range( b * c * h * w )), dtype=torch.float )
+    x = x.view( b, c, h, w )
+
+    k = 3
+    IRPS = InverseRedundantPixelShuffle_AC_DC( k )
+    RPS = RedundantPixelShuffle( k )
+
+    ac, dc = IRPS( x )
+    z = RPS( ac+dc )
+
+    print( "dc ch0" )
+    print( dc[0,0,:,:] )
+    print( "dc ch1" )
+    print( dc[0,1,:,:] )
+    print( "dc ch2" )
+    print( dc[0,2,:,:] )
+    print()
+
+    print( "ac ch0" )
+    print( ac[0,0,:,:] )
+    print( "ac ch1" )
+    print( ac[0,1,:,:] )
+    print( "ac ch2" )
+    print( ac[0,2,:,:] )
     print()
 
     print( "z ch0" )
